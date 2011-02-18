@@ -7,6 +7,26 @@ def test_rect_for_landscape():
     assert rect.crop_height == 480, rect.crop_height
     assert rect.crop_width == 512, rect.crop_width
 
+def test_rect_percentages():
+    rect = BoundingRect(width=640, height=480)
+    rect.set_size(width=320, height=300)
+
+    assert rect.left == 0.1, rect.left
+    assert rect.right == 0.1, rect.right
+
+    assert rect.top == 0.0, rect.top
+    assert rect.bottom == 0.0, rect.bottom
+
+def test_rect_percentages_portrait():
+    rect = BoundingRect(width=480, height=640)
+    rect.set_size(width=300, height=320)
+
+    assert rect.left == 0.0, rect.left
+    assert rect.right == 0.0, rect.right
+
+    assert rect.top == 0.1, rect.top
+    assert rect.bottom == 0.1, rect.bottom
+
 def test_rect_for_landscape_using_width():
     rect = BoundingRect(width=640, height=480)
     rect.set_size(width=320, height=100)

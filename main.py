@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import datetime
+from os.path import join
 
 from google.appengine.api import users
 from google.appengine.api.images import Image, PNG
@@ -24,11 +25,16 @@ from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
+from rect import BoundingRect
+
 class MainHandler(webapp.RequestHandler):
-    def get(self):
-        url = "http://s.glbimg.com/jo/g1/f/original/2011/02/18/novaodessa__.jpeg"
-        width = 300
-        height = 214
+    def get(self, width, height, url):
+        #url = "http://s.glbimg.com/jo/g1/f/original/2011/02/18/novaodessa__.jpeg"
+        #width = 240
+        #height = 100
+        width = int(width)
+        height = int(height)
+        url = join('http://', url)
 
         data = memcache.get(url)
         if data is not None:
@@ -38,26 +44,28 @@ class MainHandler(webapp.RequestHandler):
             contents = Fetch(url).content
             img = Image(contents)
 
-            rect = BoundingRect(img)
-            rect.set_size(height, width)
+            rect = BoundingRect(height=img.height, width=img.width)
+            rect.set_size(height=height, width=width)
 
-            img.crop(
-            img.resize(height=rect.resize_height, width=rect.resize_width)
+            self.response.headers['left-x'] = rect.left
+            img.crop(left_x=rect.left,
+                     top_y=rect.top,
+                     right_x=rect.right,
+                     bottom_y=rect.bottom)
+
+            img.resize(height=height, width=width)
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
-            memcache.set(url, results, 1)
+            memcache.set(url, results, 5)
 
             self.response.headers['Cache-Hit'] = 'False'
-
-        #im = get_thumbnail('http://s.glbimg.com/jo/g1/f/original/2011/02/18/novaodessa__.jpeg', '100x100', crop='center', quality=99)
 
         self.response.headers['Content-Type'] = 'image/png'
         self.response.out.write(results)
 
 def main():
-    application = webapp.WSGIApplication([('/', MainHandler)],
-                                         debug=True)
+    application = webapp.WSGIApplication([('/(\d+)x(\d+)/(.+)', MainHandler)], debug=True)
     util.run_wsgi_app(application)
 
 if __name__ == '__main__':
