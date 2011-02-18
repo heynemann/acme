@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google Inc.
+# Copyright 2008 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from google.appengine.ext import webapp
+
+import os
+import sys
+import logging
+
+# Google App Engine imports.
 from google.appengine.ext.webapp import util
 
+# A workaround to fix the partial initialization of Django before we are ready
+from django.conf import settings
+settings._target = None
 
-class MainHandler(webapp.RequestHandler):
-    def get(self):
-        self.response.out.write('Hello world!')
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
+# Import various parts of Django.
+import django.core.handlers.wsgi
+import django.core.signals
+import django.dispatch.dispatcher
+import django.db
+
+def log_exception(*args, **kwds):
+ """Log the current exception.
+ Invoked when a Django request raises an exception"""
+ logging.exception("Exception in request:")
+
+# Log errors
+django.dispatch.dispatcher.connect(
+   log_exception,
+   django.core.signals.got_request_exception)
+
+# Unregister the rollback event handler
+django.dispatch.dispatcher.disconnect(
+   django.db._rollback_on_exception,
+   django.core.signals.got_request_exception)
 
 def main():
-    application = webapp.WSGIApplication([('/', MainHandler)],
-                                         debug=True)
-    util.run_wsgi_app(application)
+  # Create a Django application for WSGI.
+  application = django.core.handlers.wsgi.WSGIHandler()
+
+  # Run the WSGI CGI handler with that application.
+  util.run_wsgi_app(application)
 
 
 if __name__ == '__main__':
-    main()
+  main()

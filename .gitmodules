@@ -1,0 +1,3 @@
+[submodule "lib/sorl"]
+	path = lib/sorl
+	url = git://github.com/sorl/sorl-thumbnail.git
