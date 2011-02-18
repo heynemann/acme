@@ -19,6 +19,7 @@ import datetime
 from google.appengine.api import users
 from google.appengine.api.images import Image, PNG
 from google.appengine.api.urlfetch import Fetch
+from google.appengine.api import memcache
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
@@ -26,12 +27,28 @@ from google.appengine.ext.webapp import util
 class MainHandler(webapp.RequestHandler):
     def get(self):
         url = "http://s.glbimg.com/jo/g1/f/original/2011/02/18/novaodessa__.jpeg"
-        contents = Fetch(url).content
-        img = Image(contents)
+        width = 300
+        height = 214
 
-        img.resize(height=214, width=300)
+        data = memcache.get(url)
+        if data is not None:
+            results = data
+            self.response.headers['Cache-Hit'] = 'True'
+        else:
+            contents = Fetch(url).content
+            img = Image(contents)
 
-        results = img.execute_transforms(output_encoding=PNG, quality=100)
+            rect = BoundingRect(img)
+            rect.set_size(height, width)
+
+            img.crop(
+            img.resize(height=rect.resize_height, width=rect.resize_width)
+
+            results = img.execute_transforms(output_encoding=PNG, quality=95)
+
+            memcache.set(url, results, 1)
+
+            self.response.headers['Cache-Hit'] = 'False'
 
         #im = get_thumbnail('http://s.glbimg.com/jo/g1/f/original/2011/02/18/novaodessa__.jpeg', '100x100', crop='center', quality=99)
 
