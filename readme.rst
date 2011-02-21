@@ -94,3 +94,27 @@ Possible values are::
     * bottom - crops top portion of the image (aligned bottom);
     * middle - crops same amount of the image on the top and bottom(aligned
       top).
+
+Settings
+--------
+
+There's a settings.py file you can edit to change some built-in behaviors of
+ACME thumbnails.
+
+**ALLOWED_DOMAINS** are the domains that are allowed to use the service. They can
+be specified using regular expressions. Some examples::
+
+    'localhost',
+    '(.)+.appspot.com', # not recommended, lol!
+
+**ALLOWED_SOURCES** are the domains where pictures can come from. These domains can 
+be specified using regular expressions. Some examples::
+
+    'localhost',
+    '(.)+.appspot.com', # not recommended, lol!
+
+**QUALITY** is a setting that ranges from 1 to 100 and is used when converting JPEG
+images.
+
+**EXPIRATION** is the amount of seconds to wait before expiring an image conversion
+in the cache. Defaults to 1 month.
