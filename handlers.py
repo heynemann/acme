@@ -131,7 +131,7 @@ class MainHandler(webapp.RequestHandler):
             self.response.headers['left'] = rect.left
             self.response.headers['top'] = rect.top
 
-            results = img.execute_transforms(output_encoding=PNG, quality=95)
+            results = img.execute_transforms(output_encoding=image_format, quality=95)
 
             memcache.set(key=key,
                          value=results,
