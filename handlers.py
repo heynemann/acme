@@ -13,6 +13,9 @@ from google.appengine.api import memcache
 from models import Picture
 from rect import BoundingRect
 
+MAX_WIDTH = 1280
+MAX_HEIGHT = 800
+
 class MainHandler(webapp.RequestHandler):
     def get(self,
             width,
@@ -30,13 +33,26 @@ class MainHandler(webapp.RequestHandler):
         height = height and int(height) or None
         url = join('http://', url)
 
+        if width > MAX_WIDTH:
+            width = MAX_WIDTH
+        if height > MAX_HEIGHT:
+            height = MAX_HEIGHT
+
         if not halign:
             halign = "center"
         if not valign:
             valign = "middle"
 
+        key = "%d_%d_%s_%s_%s" % (
+                width,
+                height,
+                halign,
+                valign,
+                url
+        )
 
-        data = memcache.get(url)
+        data = memcache.get(key)
+        self.response.headers['Cache-Key'] = key
         if data is not None:
             results = data
             self.response.headers['Cache-Hit'] = 'True'
@@ -58,7 +74,6 @@ class MainHandler(webapp.RequestHandler):
             rect = BoundingRect(height=img.height, width=img.width)
             rect.set_size(height=height, width=width, halign=halign, valign=valign)
 
-            self.response.headers['left-x'] = rect.left
             img.crop(left_x=rect.left,
                      top_y=rect.top,
                      right_x=rect.right,
@@ -68,9 +83,14 @@ class MainHandler(webapp.RequestHandler):
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
-            memcache.set(key=url,
+            #try:
+            memcache.set(key=key,
                          value=results,
-                         time=2592000) # ONE MONTH
+                         time=15) # ONE MONTH
+            #except ValueError, err:
+                #Ignore MemCache 1mb error
+                #TODO: LOG ERROR
+                #pass
 
             self.response.headers['Cache-Hit'] = 'False'
 
