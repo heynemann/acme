@@ -14,7 +14,7 @@ from google.appengine.api import memcache
 
 from models import Picture
 from rect import BoundingRect
-from settings import ALLOWED_DOMAINS, ALLOWED_SOURCES
+from settings import *
 
 MAX_WIDTH = 1280
 MAX_HEIGHT = 800
@@ -51,7 +51,7 @@ class MainHandler(webapp.RequestHandler):
             return
 
         if not width and not height:
-            self._error(400, 'Either widht or height are mandatory!')
+            self._error(400, 'Either width or height are mandatory!')
 
         url = join('http://', url)
 
@@ -87,8 +87,10 @@ class MainHandler(webapp.RequestHandler):
         extension = splitext(url)[-1]
         image_format = extension in ('.jpg', '.jpeg') and JPEG or PNG
 
-        #data = memcache.get(key)
         data = None
+        if CACHED:
+            data = memcache.get(key)
+
         self.response.headers['Cache-Key'] = key
         if data is not None:
             results = data
@@ -130,19 +132,18 @@ class MainHandler(webapp.RequestHandler):
                      right_x=rect.right,
                      bottom_y=rect.bottom)
 
-            self.response.headers['left'] = rect.left
-            self.response.headers['top'] = rect.top
-
             if flip_horizontal:
                 img.horizontal_flip()
             if flip_vertical:
                 img.vertical_flip()
 
-            results = img.execute_transforms(output_encoding=image_format, quality=95)
+            results = img.execute_transforms(output_encoding=image_format, quality=QUALITY)
 
-            memcache.set(key=key,
+            if CACHED:
+                memcache.set(key=key,
                          value=results,
-                         time=30 * 24 * 60 * 60) # ONE MONTH
+                         time=EXPIRATION) # ONE MONTH
+
 
             self.response.headers['Cache-Hit'] = 'False'
 
