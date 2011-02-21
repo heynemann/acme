@@ -1,0 +1,3 @@
+ALLOWED_DOMAINS = [
+    'localhost'
+]

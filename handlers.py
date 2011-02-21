@@ -3,6 +3,7 @@
 
 import datetime
 from os.path import join
+from urlparse import urlparse
 
 from google.appengine.ext import webapp
 from google.appengine.ext import db
@@ -12,22 +13,34 @@ from google.appengine.api import memcache
 
 from models import Picture
 from rect import BoundingRect
+from settings import ALLOWED_DOMAINS
 
 MAX_WIDTH = 1280
 MAX_HEIGHT = 800
 
 class MainHandler(webapp.RequestHandler):
+    def _error(self, status, msg):
+        self.error(status)
+        self.response.out.write(msg)
+ 
     def get(self,
             width,
             height,
             halign,
             valign,
             url):
+        res = urlparse(self.request.url)
+
+        if res.hostname not in ALLOWED_DOMAINS:
+            self._error(404, 'Your domain is not allowed!')
+            return
+
         if not url:
-            self.error(400)
+            self._error(400, 'The url argument is mandatory!')
+            return 
 
         if not width and not height:
-            self.error(400)
+            self._error(400, 'Either widht or height are mandatory!')
 
         width = width and int(width) or None
         height = height and int(height) or None
