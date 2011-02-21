@@ -39,7 +39,9 @@ class MainHandler(webapp.RequestHandler):
         return False
 
     def get(self,
+            flip_horizontal,
             width,
+            flip_vertical,
             height,
             halign,
             valign,
@@ -130,6 +132,11 @@ class MainHandler(webapp.RequestHandler):
 
             self.response.headers['left'] = rect.left
             self.response.headers['top'] = rect.top
+
+            if flip_horizontal:
+                img.horizontal_flip()
+            if flip_vertical:
+                img.vertical_flip()
 
             results = img.execute_transforms(output_encoding=image_format, quality=95)
 
