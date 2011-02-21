@@ -111,9 +111,6 @@ class MainHandler(webapp.RequestHandler):
                 image_width = width
                 image_height = float(width) / float(img.width) * float(img.height)
 
-            self.response.headers['width'] = image_width
-            self.response.headers['height'] = image_height
-
             rect = BoundingRect(height=image_height, width=image_width)
             rect.set_size(height=height, width=width, halign=halign, valign=valign)
 
@@ -124,14 +121,9 @@ class MainHandler(webapp.RequestHandler):
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
-            #try:
             memcache.set(key=key,
                          value=results,
-                         time=2) # ONE MONTH
-            #except ValueError, err:
-                #Ignore MemCache 1mb error
-                #TODO: LOG ERROR
-                #pass
+                         time=30 * 24 * 60 * 60) # ONE MONTH
 
             self.response.headers['Cache-Hit'] = 'False'
 
