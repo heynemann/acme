@@ -3,12 +3,12 @@
 
 import datetime
 import re
-from os.path import join
+from os.path import join, splitext
 from urlparse import urlparse
 
 from google.appengine.ext import webapp
 from google.appengine.ext import db
-from google.appengine.api.images import Image, PNG
+from google.appengine.api.images import Image, PNG, JPEG
 from google.appengine.api.urlfetch import Fetch
 from google.appengine.api import memcache
 
@@ -46,7 +46,7 @@ class MainHandler(webapp.RequestHandler):
             url):
         if not url:
             self._error(400, 'The url argument is mandatory!')
-            return 
+            return
 
         if not width and not height:
             self._error(400, 'Either widht or height are mandatory!')
@@ -60,9 +60,9 @@ class MainHandler(webapp.RequestHandler):
         if not self._verify_allowed_sources(url):
             self._error(404, 'Your image source is not allowed!')
             return
- 
-        width = width and int(width) or None
-        height = height and int(height) or None
+
+        width = width and int(width) or 0
+        height = height and int(height) or 0
 
         if width > MAX_WIDTH:
             width = MAX_WIDTH
@@ -82,7 +82,11 @@ class MainHandler(webapp.RequestHandler):
                 url
         )
 
-        data = memcache.get(key)
+        extension = splitext(url)[-1]
+        image_format = extension in ('.jpg', '.jpeg') and JPEG or PNG
+
+        #data = memcache.get(key)
+        data = None
         self.response.headers['Cache-Key'] = key
         if data is not None:
             results = data
@@ -102,22 +106,30 @@ class MainHandler(webapp.RequestHandler):
                 picture.picture = db.Blob(contents)
                 picture.put()
 
-            if (height / img.height) > (width / img.width):
-                img.resize(height=height)
-                image_width = float(height) / float(img.height) * float(img.width)
-                image_height = height
-            else:
+            if float(width) / float(img.width) > float(height) / float(img.height):
                 img.resize(width=width)
                 image_width = width
                 image_height = float(width) / float(img.width) * float(img.height)
+            else:
+                img.resize(height=height)
+                image_width = float(height) / float(img.height) * float(img.width)
+                image_height = height
 
             rect = BoundingRect(height=image_height, width=image_width)
             rect.set_size(height=height, width=width, halign=halign, valign=valign)
+
+            if not width:
+                width = rect.target_width
+            if not height:
+                height = rect.target_height
 
             img.crop(left_x=rect.left,
                      top_y=rect.top,
                      right_x=rect.right,
                      bottom_y=rect.bottom)
+
+            self.response.headers['left'] = rect.left
+            self.response.headers['top'] = rect.top
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
@@ -127,6 +139,6 @@ class MainHandler(webapp.RequestHandler):
 
             self.response.headers['Cache-Hit'] = 'False'
 
-        self.response.headers['Content-Type'] = 'image/png'
+        self.response.headers['Content-Type'] = image_format == JPEG and 'image/jpeg' or 'image/png'
         self.response.out.write(results)
 
