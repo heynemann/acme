@@ -14,7 +14,12 @@ from models import Picture
 from rect import BoundingRect
 
 class MainHandler(webapp.RequestHandler):
-    def get(self, width, height, url):
+    def get(self,
+            width,
+            height,
+            halign,
+            valign,
+            url):
         if not url:
             self.error(400)
 
@@ -24,6 +29,12 @@ class MainHandler(webapp.RequestHandler):
         width = width and int(width) or None
         height = height and int(height) or None
         url = join('http://', url)
+
+        if not halign:
+            halign = "center"
+        if not valign:
+            valign = "middle"
+
 
         data = memcache.get(url)
         if data is not None:
@@ -45,7 +56,7 @@ class MainHandler(webapp.RequestHandler):
                 picture.put()
 
             rect = BoundingRect(height=img.height, width=img.width)
-            rect.set_size(height=height, width=width)
+            rect.set_size(height=height, width=width, halign=halign, valign=valign)
 
             self.response.headers['left-x'] = rect.left
             img.crop(left_x=rect.left,
@@ -57,7 +68,9 @@ class MainHandler(webapp.RequestHandler):
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
-            memcache.set(url, results, 5)
+            memcache.set(key=url,
+                         value=results,
+                         time=2592000) # ONE MONTH
 
             self.response.headers['Cache-Hit'] = 'False'
 

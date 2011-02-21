@@ -8,7 +8,7 @@ from handlers import *
 
 def main():
     application = webapp.WSGIApplication([
-        ('/(\d+)?x(\d+)?/(.+)', MainHandler)
+        ('/(\d+)?x(\d+)?/(?:(left|right|center)/)?(?:(top|bottom|middle)/)?/?(.+)', MainHandler)
     ], debug=True)
     util.run_wsgi_app(application)
 
