@@ -53,10 +53,13 @@ The first argument you get to specify is the width. Some examples::
     http://mythumbservice.appspot.com/200x/right/middle/somedomain.com/images/somepicture.jpg
     http://mythumbservice.appspot.com/x200/right/middle/somedomain.com/images/somepicture.jpg
 
-In the first example we are specify 200px of width. In the second we are
-specifying the same 200px, but we are saying we want a horizontal flip. In the
-third example we are specifying we want 200px of width with proportional
-height. In the fourth example we are specifying we want 100px of height with
+In the first example we are specify 200px of width.
+
+In the second we are specifying the same 200px, but we are saying we want a horizontal flip.
+
+In the third example we are specifying we want 200px of width with proportional height.
+
+In the fourth example we are specifying we want 100px of height with
 proportional width.
 
 Height
@@ -65,3 +68,29 @@ Height
 Analogue to width, but is the second argument in the size portion of the url.
 
 A negative height specifies a vertical flip.
+
+Horizontal Align
+----------------
+
+This part of the url specifies how we want images to be cropped if they need
+horizontal cropping.
+
+Possible values are::
+
+    * left - crops right portion of the image (aligned left);
+    * right - crops left portion of the image (aligned right);
+    * center - crops same amount of the image on the left and right (aligned
+      center).
+
+Vertical Align
+----------------
+
+This part of the url specifies how we want images to be cropped if they need
+vertical cropping.
+
+Possible values are::
+
+    * top - crops bottom portion of the image (aligned top);
+    * bottom - crops top portion of the image (aligned bottom);
+    * middle - crops same amount of the image on the top and bottom(aligned
+      top).
