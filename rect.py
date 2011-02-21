@@ -5,13 +5,22 @@ class BoundingRect(object):
         self.landscape = self.width >= self.height
 
     def set_size(self, width, height):
-        use_height_for_ratio = (self.width - width) > (self.height - height)
+        self.target_width = width
+        self.target_height = height
+
+        if not self.target_width:
+            self.target_width = int(self.target_height * self.width / self.height)
+
+        if not self.target_height:
+            self.target_height = int(self.target_width * self.height / self.width)
+
+        use_height_for_ratio = (self.width - self.target_width) > (self.height - self.target_height)
         if use_height_for_ratio:
             self.crop_height = self.height
-            self.crop_width = float(width) * float(self.height) / float(height)
+            self.crop_width = float(self.target_width) * float(self.height) / float(self.target_height)
         else:
             self.crop_width = self.width
-            self.crop_height = float(height) * float(self.width) / float(width)
+            self.crop_height = float(self.target_height) * float(self.width) / float(self.target_width)
 
         self.top = ((float(self.height) - float(self.crop_height)) / 2) / float(self.height)
         if self.top < 0:
