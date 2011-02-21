@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import re
 from os.path import join
 from urlparse import urlparse
 
@@ -22,16 +23,22 @@ class MainHandler(webapp.RequestHandler):
     def _error(self, status, msg):
         self.error(status)
         self.response.out.write(msg)
- 
+
+    def _verify_allowed_domains(self):
+        res = urlparse(self.request.url)
+        for pattern in ALLOWED_DOMAINS:
+            if re.match('^%s$' % pattern, res.hostname):
+                return True
+        return False
+
     def get(self,
             width,
             height,
             halign,
             valign,
             url):
-        res = urlparse(self.request.url)
 
-        if res.hostname not in ALLOWED_DOMAINS:
+        if not self._verify_allowed_domains():
             self._error(404, 'Your domain is not allowed!')
             return
 
