@@ -102,23 +102,25 @@ class MainHandler(webapp.RequestHandler):
                 picture.picture = db.Blob(contents)
                 picture.put()
 
-            rect = BoundingRect(height=img.height, width=img.width)
+            if (height / img.height) > (width / img.width):
+                img.resize(height=height)
+                image_width = float(height) / float(img.height) * float(img.width)
+                image_height = height
+            else:
+                img.resize(width=width)
+                image_width = width
+                image_height = float(width) / float(img.width) * float(img.height)
+
+            self.response.headers['width'] = image_width
+            self.response.headers['height'] = image_height
+
+            rect = BoundingRect(height=image_height, width=image_width)
             rect.set_size(height=height, width=width, halign=halign, valign=valign)
 
             img.crop(left_x=rect.left,
                      top_y=rect.top,
                      right_x=rect.right,
                      bottom_y=rect.bottom)
-
-            self.response.headers['left'] = rect.left
-            self.response.headers['top'] = rect.top
-            self.response.headers['right'] = rect.right
-            self.response.headers['bottom'] = rect.bottom
-
-            img.resize(height=height or rect.target_height, width=width or rect.target_width)
-
-            self.response.headers['width'] = width or rect.target_width
-            self.response.headers['height'] = height or rect.target_height
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 

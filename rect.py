@@ -10,14 +10,6 @@ class BoundingRect(object):
 
         self.calculate_proportional_dimensions()
 
-        use_height_for_ratio = self.target_width < self.target_height
-
-        if use_height_for_ratio:
-            self.crop_height = self.height
-            self.crop_width = float(self.target_width) / float(self.target_height) * float(self.width)
-        else:
-            self.crop_width = self.width
-            self.crop_height = float(self.target_height) / float(self.target_width) * float(self.height)
         self.calculate_crops(halign, valign)
 
     def calculate_proportional_dimensions(self):
@@ -28,7 +20,7 @@ class BoundingRect(object):
             self.target_height = int(self.target_width * self.height / self.width)
 
     def calculate_crops(self, halign, valign):
-        self.top = ((float(self.height) - float(self.crop_height)) / 2) / float(self.height)
+        self.top = ((float(self.height) - float(self.target_height)) / 2) / float(self.height)
         if self.top < 0:
             self.top = 0.0
         self.bottom = 1.0 - self.top
@@ -40,7 +32,7 @@ class BoundingRect(object):
             self.top = 2 * self.top
             self.bottom = 1.0
 
-        self.left = ((float(self.width) - float(self.crop_width)) / 2) / float(self.width)
+        self.left = ((float(self.width) - float(self.target_width)) / 2) / float(self.width)
         if self.left < 0:
             self.left = 0.0
         self.right = 1.0 - self.left
