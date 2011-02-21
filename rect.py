@@ -4,20 +4,20 @@ class BoundingRect(object):
         self.height = float(height)
         self.landscape = self.width >= self.height
 
-    def set_size(self, width, height, halign, valign):
+    def set_size(self, width, height, halign="center", valign="middle"):
         self.target_width = width
         self.target_height = height
 
         self.calculate_proportional_dimensions()
 
-        use_height_for_ratio = (self.width - self.target_width) > (self.height - self.target_height)
+        use_height_for_ratio = self.target_width < self.target_height
+
         if use_height_for_ratio:
             self.crop_height = self.height
-            self.crop_width = float(self.target_width) * float(self.height) / float(self.target_height)
+            self.crop_width = float(self.target_width) / float(self.target_height) * float(self.width)
         else:
             self.crop_width = self.width
-            self.crop_height = float(self.target_height) * float(self.width) / float(self.target_width)
-
+            self.crop_height = float(self.target_height) / float(self.target_width) * float(self.height)
         self.calculate_crops(halign, valign)
 
     def calculate_proportional_dimensions(self):

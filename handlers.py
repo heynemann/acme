@@ -110,14 +110,22 @@ class MainHandler(webapp.RequestHandler):
                      right_x=rect.right,
                      bottom_y=rect.bottom)
 
-            img.resize(height=rect.target_height, width=rect.target_width)
+            self.response.headers['left'] = rect.left
+            self.response.headers['top'] = rect.top
+            self.response.headers['right'] = rect.right
+            self.response.headers['bottom'] = rect.bottom
+
+            img.resize(height=height or rect.target_height, width=width or rect.target_width)
+
+            self.response.headers['width'] = width or rect.target_width
+            self.response.headers['height'] = height or rect.target_height
 
             results = img.execute_transforms(output_encoding=PNG, quality=95)
 
             #try:
             memcache.set(key=key,
                          value=results,
-                         time=15) # ONE MONTH
+                         time=2) # ONE MONTH
             #except ValueError, err:
                 #Ignore MemCache 1mb error
                 #TODO: LOG ERROR
