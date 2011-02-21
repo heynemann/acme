@@ -14,7 +14,7 @@ from google.appengine.api import memcache
 
 from models import Picture
 from rect import BoundingRect
-from settings import ALLOWED_DOMAINS
+from settings import ALLOWED_DOMAINS, ALLOWED_SOURCES
 
 MAX_WIDTH = 1280
 MAX_HEIGHT = 800
@@ -31,17 +31,19 @@ class MainHandler(webapp.RequestHandler):
                 return True
         return False
 
+    def _verify_allowed_sources(self, url):
+        res = urlparse(url)
+        for pattern in ALLOWED_SOURCES:
+            if re.match('^%s$' % pattern, res.hostname):
+                return True
+        return False
+
     def get(self,
             width,
             height,
             halign,
             valign,
             url):
-
-        if not self._verify_allowed_domains():
-            self._error(404, 'Your domain is not allowed!')
-            return
-
         if not url:
             self._error(400, 'The url argument is mandatory!')
             return 
@@ -49,9 +51,18 @@ class MainHandler(webapp.RequestHandler):
         if not width and not height:
             self._error(400, 'Either widht or height are mandatory!')
 
+        url = join('http://', url)
+
+        if not self._verify_allowed_domains():
+            self._error(404, 'Your domain is not allowed!')
+            return
+
+        if not self._verify_allowed_sources(url):
+            self._error(404, 'Your image source is not allowed!')
+            return
+ 
         width = width and int(width) or None
         height = height and int(height) or None
-        url = join('http://', url)
 
         if width > MAX_WIDTH:
             width = MAX_WIDTH
