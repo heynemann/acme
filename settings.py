@@ -1,6 +1,7 @@
 # domains specified as regular expressions
 ALLOWED_DOMAINS = [
     'localhost',
+    'acmethumbs.appspot.com',
     '(.+)[.]globo[.]com',
     '(.+)[.]globoi[.]com'
 ]
