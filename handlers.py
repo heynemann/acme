@@ -9,10 +9,9 @@ from urlparse import urlparse
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.api.images import Image, PNG, JPEG
-from google.appengine.api.urlfetch import Fetch
 from google.appengine.api import memcache
 
-from models import Picture
+from models import Picture, ImageNotFoundError
 from rect import BoundingRect
 from settings import *
 
@@ -87,9 +86,7 @@ class MainHandler(webapp.RequestHandler):
         extension = splitext(url)[-1]
         image_format = extension in ('.jpg', '.jpeg') and JPEG or PNG
 
-        data = None
-        if CACHED:
-            data = memcache.get(key)
+        data = memcache.get(key)
 
         self.response.headers['Cache-Key'] = key
         if data is not None:
@@ -98,17 +95,23 @@ class MainHandler(webapp.RequestHandler):
         else:
             query = "SELECT * FROM Picture WHERE url = :1 LIMIT 1"
             pictures = db.GqlQuery(query, url).fetch(1)
-
-            if len(pictures) > 0:
-                picture = pictures[0]
-                img = Image(picture.picture)
-            else:
-                contents = Fetch(url).content
-                img = Image(contents)
-                picture = Picture()
-                picture.url = url
-                picture.picture = db.Blob(contents)
-                picture.put()
+            
+            try:
+                if len(pictures) > 0: 
+                    picture = pictures[0]
+                    if picture.is_expired():
+                        img = picture.fetch_image()
+                        picture.put()
+                    else:
+                        img = Image(picture.picture)
+                else:
+                    picture = Picture()
+                    picture.url = url
+                    img = picture.fetch_image()
+                    picture.put()
+            except ImageNotFoundError:
+                self._error(404, 'Your image source is not found!')
+                return
 
             if float(width) / float(img.width) > float(height) / float(img.height):
                 img.resize(width=width)
@@ -139,10 +142,9 @@ class MainHandler(webapp.RequestHandler):
 
             results = img.execute_transforms(output_encoding=image_format, quality=QUALITY)
 
-            if CACHED:
-                memcache.set(key=key,
-                         value=results,
-                         time=EXPIRATION) # ONE MONTH
+            memcache.set(key=key,
+                     value=results,
+                     time=EXPIRATION) # ONE MONTH
 
 
             self.response.headers['Cache-Hit'] = 'False'

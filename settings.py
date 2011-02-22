@@ -22,3 +22,6 @@ QUALITY = 95
 # Expiration in seconds for the image cache.
 # Defaults to 1 month.
 EXPIRATION = 30 * 24 * 60 * 60
+
+# Expiration in seconds for the database.
+EXPIRATION_DB = 30 * 24 * 60 * 60
