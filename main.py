@@ -8,10 +8,10 @@ from handlers import *
 from settings import DEBUG
 
 def application():
-    webapp = webapp.WSGIApplication([
+    app = webapp.WSGIApplication([
         ('/(-)?(\d+)?x(-)?(\d+)?/(?:(left|right|center)/)?(?:(top|bottom|middle)/)?/?(.+)', MainHandler)
     ], debug=DEBUG)
-    return webapp
+    return app
 
 def main():
     util.run_wsgi_app(application())
