@@ -1,1 +1,1 @@
-nosetests -v --with-gae --without-sandbox
+nosetests tests/ -v --with-gae --without-sandbox
