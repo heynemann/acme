@@ -5,12 +5,16 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 from handlers import *
+from settings import DEBUG
+
+def application():
+    app = webapp.WSGIApplication([
+        ('/(?:(-)?(\d+)?x(-)?(\d+)?/)?(?:(left|right|center)/)?(?:(top|bottom|middle)/)?/?(.+)', MainHandler)
+    ], debug=DEBUG)
+    return app
 
 def main():
-    application = webapp.WSGIApplication([
-        ('/(?:(-)?(\d+)?x(-)?(\d+)?/)?(?:(left|right|center)/)?(?:(top|bottom|middle)/)?/?(.+)', MainHandler)
-    ], debug=True)
-    util.run_wsgi_app(application)
+    util.run_wsgi_app(application())
 
 if __name__ == '__main__':
     main()

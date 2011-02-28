@@ -11,7 +11,7 @@ def test_lastfetch():
     picture.last_fetch = datetime.datetime.now()
     assert picture.is_expired() == False
 
-def test_lastfetch_expireted():
+def test_lastfetch_expirated():
     picture = Picture()
     picture.last_fetch = datetime.datetime.now() - datetime.timedelta(seconds=EXPIRATION_DB + 1)
     assert picture.is_expired() == True
