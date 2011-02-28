@@ -49,8 +49,8 @@ class MainHandler(webapp.RequestHandler):
             self._error(400, 'The url argument is mandatory!')
             return
 
-        if not width and not height:
-            self._error(400, 'Either width or height are mandatory!')
+        #if not width and not height:
+            #self._error(400, 'Either width or height are mandatory!')
 
         url = join('http://', url)
 
@@ -112,6 +112,10 @@ class MainHandler(webapp.RequestHandler):
             except ImageNotFoundError:
                 self._error(404, 'Your image source is not found!')
                 return
+
+            if not width and not height:
+                width = img.width
+                height = img.height
 
             if float(width) / float(img.width) > float(height) / float(img.height):
                 img.resize(width=width)
