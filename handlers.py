@@ -11,12 +11,16 @@ from google.appengine.ext import db
 from google.appengine.api.images import Image, PNG, JPEG
 from google.appengine.api import memcache
 
-from models import Picture, ImageNotFoundError
+try:
+  # When deployed
+  from google.appengine.runtime import RequestTooLargeError
+except ImportError:
+  # In the development server
+  from google.appengine.runtime.apiproxy_errors import RequestTooLargeError
+
+from models import Picture, ImageNotFoundError, MAX_WIDTH, MAX_HEIGHT
 from rect import BoundingRect
 from settings import *
-
-MAX_WIDTH = 1280
-MAX_HEIGHT = 800
 
 class MainHandler(webapp.RequestHandler):
     def _error(self, status, msg):
@@ -37,20 +41,10 @@ class MainHandler(webapp.RequestHandler):
                 return True
         return False
 
-    def get(self,
-            flip_horizontal,
-            width,
-            flip_vertical,
-            height,
-            halign,
-            valign,
-            url):
+    def validate_url(self, url):
         if not url:
             self._error(400, 'The url argument is mandatory!')
             return
-
-        #if not width and not height:
-            #self._error(400, 'Either width or height are mandatory!')
 
         url = join('http://', url)
 
@@ -61,6 +55,53 @@ class MainHandler(webapp.RequestHandler):
         if not self._verify_allowed_sources(url):
             self._error(404, 'Your image source is not allowed!')
             return
+
+        return url
+
+    def transform(self, img, width, flip_horizontal, height, flip_vertical, image_format, halign="center", valign="middle"):
+        if not width and not height:
+            width = img.width
+            height = img.height
+
+        if float(width) / float(img.width) > float(height) / float(img.height):
+            img.resize(width=width)
+            image_width = width
+            image_height = float(width) / float(img.width) * float(img.height)
+        else:
+            img.resize(height=height)
+            image_width = float(height) / float(img.height) * float(img.width)
+            image_height = height
+
+        rect = BoundingRect(height=image_height, width=image_width)
+        rect.set_size(height=height, width=width, halign=halign, valign=valign)
+
+        if not width:
+            width = rect.target_width
+        if not height:
+            height = rect.target_height
+
+        img.crop(left_x=rect.left,
+                 top_y=rect.top,
+                 right_x=rect.right,
+                 bottom_y=rect.bottom)
+
+        if flip_horizontal:
+            img.horizontal_flip()
+        if flip_vertical:
+            img.vertical_flip()
+
+        return img.execute_transforms(output_encoding=image_format, quality=QUALITY)
+
+    def get(self,
+            flip_horizontal,
+            width,
+            flip_vertical,
+            height,
+            halign,
+            valign,
+            url):
+
+        url = self.validate_url(url)
 
         width = width and int(width) or 0
         height = height and int(height) or 0
@@ -95,61 +136,37 @@ class MainHandler(webapp.RequestHandler):
         else:
             query = "SELECT * FROM Picture WHERE url = :1 LIMIT 1"
             pictures = db.GqlQuery(query, url).fetch(1)
-            
+
             try:
                 if len(pictures) > 0: 
                     picture = pictures[0]
                     if picture.is_expired():
                         img = picture.fetch_image()
-                        picture.put()
+                        try:
+                            picture.put()
+                        except RequestTooLargeError:
+                            picture.rebalance_picture_size(self.transform)
+                            picture.put()
                     else:
                         img = Image(picture.picture)
                 else:
                     picture = Picture()
                     picture.url = url
                     img = picture.fetch_image()
-                    picture.put()
+                    try:
+                        picture.put()
+                    except RequestTooLargeError:
+                        picture.rebalance_picture_size(self.transform)
+                        picture.put()
             except ImageNotFoundError:
                 self._error(404, 'Your image source is not found!')
                 return
 
-            if not width and not height:
-                width = img.width
-                height = img.height
-
-            if float(width) / float(img.width) > float(height) / float(img.height):
-                img.resize(width=width)
-                image_width = width
-                image_height = float(width) / float(img.width) * float(img.height)
-            else:
-                img.resize(height=height)
-                image_width = float(height) / float(img.height) * float(img.width)
-                image_height = height
-
-            rect = BoundingRect(height=image_height, width=image_width)
-            rect.set_size(height=height, width=width, halign=halign, valign=valign)
-
-            if not width:
-                width = rect.target_width
-            if not height:
-                height = rect.target_height
-
-            img.crop(left_x=rect.left,
-                     top_y=rect.top,
-                     right_x=rect.right,
-                     bottom_y=rect.bottom)
-
-            if flip_horizontal:
-                img.horizontal_flip()
-            if flip_vertical:
-                img.vertical_flip()
-
-            results = img.execute_transforms(output_encoding=image_format, quality=QUALITY)
+            results = self.transform(img, width, flip_horizontal, height, flip_vertical, image_format, halign, valign)
 
             memcache.set(key=key,
                      value=results,
                      time=EXPIRATION) # ONE MONTH
-
 
             self.response.headers['Cache-Hit'] = 'False'
 
